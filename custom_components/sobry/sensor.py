@@ -60,7 +60,7 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"{contract['id']}_current_price"
-        self._attr_name = f"Sobry {contract['pdl']} Prix"
+        self._attr_name = "Prix Actuel"
 
     @property
     def native_value(self) -> float | None:

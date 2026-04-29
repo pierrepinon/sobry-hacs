@@ -17,10 +17,6 @@ _LOGGER = logging.getLogger(__name__)
 # Past days are useless: sensors only display slots for the current day.
 _CACHE_MAX_DAYS = 2
 
-# HA polls _async_update_data every 15 min so sensors recalculate at each slot
-# boundary. The cache check inside prevents redundant network calls: the API is
-# only hit once per day (today on first run, tomorrow at 14:00).
-_POLL_INTERVAL = timedelta(minutes=15)
 
 
 class SobryContractCoordinator(DataUpdateCoordinator[dict[int, dict]]):
@@ -42,12 +38,12 @@ class SobryContractCoordinator(DataUpdateCoordinator[dict[int, dict]]):
 
     The cache is a flat dict { slot_start_timestamp → slot_data }.
     A missing day means no slot at midnight for that date. An empty API response
-    (prices not yet published) leaves no keys, so the next poll retries.
+    (prices not yet published) leaves no keys, so the next trigger retries.
     Example slot: {"time": "14:00", "price": 0.1842, "color": "green", "colorLabel": "Off-peak"}
     """
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, client: SobryApiClient, token: str, contract: dict) -> None:
-        super().__init__(hass, _LOGGER, name=f"{DOMAIN}_{contract['id']}", update_interval=_POLL_INTERVAL)
+        super().__init__(hass, _LOGGER, name=f"{DOMAIN}_{contract['id']}")
         self._entry = entry
         self._client = client
         self._token = token
@@ -80,14 +76,21 @@ class SobryContractCoordinator(DataUpdateCoordinator[dict[int, dict]]):
         return self._price_cache
 
     async def async_setup(self) -> None:
-        """Perform the initial data fetch and register the 14:00 pre-fetch trigger.
+        """Perform the initial data fetch and register time triggers.
 
-        The listener is registered via async_on_unload so it is automatically
+        Listeners are registered via async_on_unload so they are automatically
         removed when the config entry is unloaded.
         """
         # Initial load: fill the cache before sensors are created, otherwise
         # they would start with native_value=None.
         await self.async_refresh()
+
+        # Refresh sensors exactly at each 15-min slot boundary.
+        self._entry.async_on_unload(
+            async_track_time_change(
+                self.hass, self._handle_slot_boundary, minute=[0, 15, 30, 45], second=0,
+            )
+        )
 
         # 14:00: pre-fetch tomorrow's prices.
         # Sobry publishes next-day tariffs around 13:30; we wait until 14:00
@@ -101,6 +104,10 @@ class SobryContractCoordinator(DataUpdateCoordinator[dict[int, dict]]):
     # ------------------------------------------------------------------
     # Time-triggered callback
     # ------------------------------------------------------------------
+    
+    async def _handle_slot_boundary(self, _) -> None:
+        """Trigger a coordinator refresh at each 15-min slot boundary."""
+        await self.async_refresh()
 
     @callback
     def _handle_fetch_tomorrow(self, _) -> None:

@@ -1,0 +1,12 @@
+{
+  "domain": "sobry",
+  "name": "Sobry",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://github.com/pierre-pinon/sobry-hacs",
+  "issue_tracker": "https://github.com/pierre-pinon/sobry-hacs/issues",
+  "dependencies": [],
+  "codeowners": ["@pierre-pinon"],
+  "requirements": [],
+  "iot_class": "cloud_polling"
+}

@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Sobry",
+        "description": "Enter your email address to receive a login code.",
+        "data": {
+          "email": "Email address"
+        }
+      },
+      "otp": {
+        "title": "Verification",
+        "description": "A code has been sent to {email}. Enter it below.",
+        "data": {
+          "code": "OTP code"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to Sobry. Check your internet connection.",
+      "invalid_auth": "Invalid or expired code. Please try again."
+    },
+    "abort": {
+      "already_configured": "This Sobry account is already configured."
+    }
+  }
+}

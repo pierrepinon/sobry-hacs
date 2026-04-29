@@ -26,9 +26,9 @@ class _SobryBaseSensor(CoordinatorEntity[SobryContractCoordinator], SensorEntity
         contract = coordinator.contract
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, contract["id"])},
-            name=f"Sobry {contract['ref']}",
+            name=f"Contrat {contract['ref']}",
             manufacturer="Sobry",
-            model=contract["category"],
+            model=f"Linky {contract['pdl']}",
             configuration_url=APP_URL,
         )
 
@@ -54,13 +54,13 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "EUR/kWh"
     _attr_suggested_display_precision = 4
-    _attr_icon = "mdi:lightning-bolt"
+    _attr_icon = "mdi:meter-electric"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"{contract['id']}_current_price"
-        self._attr_name = f"Sobry {contract['ref']} Prix"
+        self._attr_name = f"Sobry {contract['pdl']} Prix"
 
     @property
     def native_value(self) -> float | None:

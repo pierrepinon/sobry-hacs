@@ -51,7 +51,6 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
       color_label  — human-readable tier label (e.g. "Off-peak", "Peak")
     """
 
-    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "EUR/kWh"
     _attr_suggested_display_precision = 4
     _attr_icon = "mdi:meter-electric"

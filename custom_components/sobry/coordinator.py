@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import SobryApiClient, SobryAuthError
 from .const import DOMAIN
@@ -84,6 +85,11 @@ class SobryContractCoordinator(DataUpdateCoordinator[dict[int, dict]]):
         # Initial load: fill the cache before sensors are created, otherwise
         # they would start with native_value=None.
         await self.async_refresh()
+
+        # Pre-fetch tomorrow if HA starts after 14:00: the daily trigger already
+        # fired and won't fire again, so tomorrow's slots would stay missing.
+        if dt_util.now().hour >= 14:
+            await self._fetch_tomorrow()
 
         # Refresh sensors exactly at each 15-min slot boundary.
         self._entry.async_on_unload(

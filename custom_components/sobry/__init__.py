@@ -18,11 +18,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     hass.data.setdefault(DOMAIN, {})
 
+    # Initialize the API Client
     client = SobryApiClient(async_get_clientsession(hass))
+
+    # Fetch contracts
     contracts = await client.get_contracts(entry.data[CONF_TOKEN])
 
     coordinators = []
     for contract in contracts:
+        dashboard = await client.get_dashboard(entry.data[CONF_TOKEN], contract["id"])
+        contract["meter"] = dashboard.get("meter", {})
+        contract["consumption"] = dashboard.get("consumption", {})
         coordinator = SobryContractCoordinator(hass, entry, client, entry.data[CONF_TOKEN], contract)
         await coordinator.async_setup()
         coordinators.append(coordinator)

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -15,7 +16,16 @@ from .coordinator import SobryContractCoordinator
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Create one sensor per Sobry contract and register them with HA."""
     coordinators: list[SobryContractCoordinator] = hass.data[DOMAIN][entry.entry_id]["coordinators"]
-    async_add_entities(SobryCurrentPriceSensor(coord) for coord in coordinators)
+    async_add_entities(
+        entity
+        for coord in coordinators
+        for entity in (
+            SobryCurrentPriceSensor(coord),
+            SobrySubscribedPowerSensor(coord),
+            SobryMonthlyEnergySensor(coord),
+            SobryMonthlyPriceSensor(coord),
+        )
+    )
 
 
 class _SobryBaseSensor(CoordinatorEntity[SobryContractCoordinator], SensorEntity):
@@ -40,6 +50,20 @@ class _SobryBaseSensor(CoordinatorEntity[SobryContractCoordinator], SensorEntity
         now = dt_util.now()
         day_start = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
         return {ts: slot for ts, slot in cache.items() if day_start <= ts < day_start + 86400}
+
+    def _next_24h_slots(self) -> list[dict]:
+        """Return slots covering the next 24 hours, ordered chronologically."""
+        cache = self.coordinator.data
+        if not cache:
+            return []
+        now = dt_util.now()
+        current_ts = int(now.replace(minute=(now.minute // 15) * 15, second=0, microsecond=0).timestamp())
+        cutoff = current_ts + 86400
+        return [
+            {"timestamp": ts, "price": slot.get("price")}
+            for ts, slot in sorted(cache.items())
+            if current_ts <= ts < cutoff
+        ]
 
 
 class SobryCurrentPriceSensor(_SobryBaseSensor):
@@ -74,7 +98,64 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
         return {
             "color": slot.get("color"),
             "color_label": slot.get("colorLabel"),
+            "prices": self._next_24h_slots(),
         }
+
+
+class SobryMonthlyEnergySensor(_SobryBaseSensor):
+    """Monthly energy consumption for a Sobry contract."""
+
+    _attr_native_unit_of_measurement = "kWh"
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_icon = "mdi:lightning-bolt"
+
+    def __init__(self, coordinator: SobryContractCoordinator) -> None:
+        super().__init__(coordinator)
+        contract = coordinator.contract
+        self._attr_unique_id = f"{contract['id']}_monthly_energy"
+        self._attr_name = "Consommation Mensuelle"
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.contract.get("consumption", {}).get("energy")
+
+
+class SobryMonthlyPriceSensor(_SobryBaseSensor):
+    """Monthly electricity cost for a Sobry contract."""
+
+    _attr_native_unit_of_measurement = "EUR"
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_suggested_display_precision = 2
+    _attr_icon = "mdi:currency-eur"
+
+    def __init__(self, coordinator: SobryContractCoordinator) -> None:
+        super().__init__(coordinator)
+        contract = coordinator.contract
+        self._attr_unique_id = f"{contract['id']}_monthly_price"
+        self._attr_name = "Coût Mensuel"
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.contract.get("consumption", {}).get("price")
+
+
+class SobrySubscribedPowerSensor(_SobryBaseSensor):
+    """Contracted maximum power for a Sobry contract (diagnostic)."""
+
+    _attr_native_unit_of_measurement = "kVA"
+    _attr_icon = "mdi:lightning-bolt"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: SobryContractCoordinator) -> None:
+        super().__init__(coordinator)
+        contract = coordinator.contract
+        self._attr_unique_id = f"{contract['id']}_subscribed_power"
+        self._attr_name = "Puissance Souscrite"
+
+    @property
+    def native_value(self) -> int | None:
+        return self.coordinator.contract.get("meter", {}).get("subscribedPower")
 
 
 def _current_slot(cache: dict[int, dict]) -> dict | None:

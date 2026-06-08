@@ -36,7 +36,7 @@ class _SobryBaseSensor(CoordinatorEntity[SobryContractCoordinator], SensorEntity
         contract = coordinator.contract
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, contract["id"])},
-            name=contract['ref'],
+            name=f"Sobry {contract['ref']}",
             manufacturer="Sobry",
             model=f"Linky {contract['pdl']}",
             configuration_url=APP_URL,

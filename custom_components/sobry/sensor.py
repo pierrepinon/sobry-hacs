@@ -80,12 +80,12 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
     _attr_native_unit_of_measurement = "EUR/kWh"
     _attr_suggested_display_precision = 4
     _attr_icon = "mdi:meter-electric"
+    _attr_translation_key = "current_price"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_current_price"
-        self._attr_name = "Current Price"
 
     @property
     def native_value(self) -> float | None:
@@ -111,12 +111,12 @@ class SobryMonthlyEnergySensor(_SobryBaseSensor):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_state_class = SensorStateClass.TOTAL
     _attr_icon = "mdi:lightning-bolt"
+    _attr_translation_key = "monthly_energy"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_monthly_energy"
-        self._attr_name = "Monthly Energy"
 
     @property
     def native_value(self) -> float | None:
@@ -130,12 +130,12 @@ class SobryMonthlyPriceSensor(_SobryBaseSensor):
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_suggested_display_precision = 2
     _attr_icon = "mdi:currency-eur"
+    _attr_translation_key = "monthly_price"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_monthly_price"
-        self._attr_name = "Monthly Cost"
 
     @property
     def native_value(self) -> float | None:
@@ -148,12 +148,12 @@ class SobrySubscribedPowerSensor(_SobryBaseSensor):
     _attr_native_unit_of_measurement = "kVA"
     _attr_icon = "mdi:lightning-bolt"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "subscribed_power"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_subscribed_power"
-        self._attr_name = "Subscribed Power"
 
     @property
     def native_value(self) -> int | None:

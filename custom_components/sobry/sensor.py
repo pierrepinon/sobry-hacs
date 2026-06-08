@@ -31,12 +31,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class _SobryBaseSensor(CoordinatorEntity[SobryContractCoordinator], SensorEntity):
     """Base sensor: binds a HA entity to one Sobry contract coordinator."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, contract["id"])},
-            name=f"Contrat {contract['ref']}",
+            name=f"Sobry {contract['ref']}",
             manufacturer="Sobry",
             model=f"Linky {contract['pdl']}",
             configuration_url=APP_URL,
@@ -82,8 +84,8 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
-        self._attr_unique_id = f"{contract['id']}_current_price"
-        self._attr_name = "Prix Actuel"
+        self._attr_unique_id = f"sobry_{contract['id']}_current_price"
+        self._attr_name = "Current Price"
 
     @property
     def native_value(self) -> float | None:
@@ -113,8 +115,8 @@ class SobryMonthlyEnergySensor(_SobryBaseSensor):
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
-        self._attr_unique_id = f"{contract['id']}_monthly_energy"
-        self._attr_name = "Consommation Mensuelle"
+        self._attr_unique_id = f"sobry_{contract['id']}_monthly_energy"
+        self._attr_name = "Monthly Energy"
 
     @property
     def native_value(self) -> float | None:
@@ -132,8 +134,8 @@ class SobryMonthlyPriceSensor(_SobryBaseSensor):
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
-        self._attr_unique_id = f"{contract['id']}_monthly_price"
-        self._attr_name = "Coût Mensuel"
+        self._attr_unique_id = f"sobry_{contract['id']}_monthly_price"
+        self._attr_name = "Monthly Cost"
 
     @property
     def native_value(self) -> float | None:
@@ -150,8 +152,8 @@ class SobrySubscribedPowerSensor(_SobryBaseSensor):
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
-        self._attr_unique_id = f"{contract['id']}_subscribed_power"
-        self._attr_name = "Puissance Souscrite"
+        self._attr_unique_id = f"sobry_{contract['id']}_subscribed_power"
+        self._attr_name = "Subscribed Power"
 
     @property
     def native_value(self) -> int | None:

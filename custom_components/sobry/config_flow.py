@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import voluptuous as vol
-import aiohttp
 
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -11,11 +10,7 @@ from .const import CONF_CUSTOMER_ID, CONF_EMAIL, CONF_TOKEN, DOMAIN
 
 
 class SobryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Two-step config flow: email → OTP code.
-
-    Step 1 (user): collect the user's email and trigger an OTP send.
-    Step 2 (otp):  collect the OTP code, verify it, and create the entry.
-    """
+    """Two-step config flow: email → OTP code."""
 
     VERSION = 1
 
@@ -32,7 +27,12 @@ class SobryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             try:
                 await client.generate_otp(email)
-            except (SobryAuthError, aiohttp.ClientError):
+            except SobryAuthError as err:
+                if "Connection error" in str(err):
+                    errors["base"] = "cannot_connect"
+                else:
+                    errors["base"] = "unknown"
+            except Exception:  # noqa: S110
                 errors["base"] = "cannot_connect"
             else:
                 self._email = email
@@ -54,8 +54,13 @@ class SobryConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 data = await client.verify_otp(self._email, user_input["code"])
             except SobryAuthError as err:
-                errors["base"] = "invalid_auth" if "invalid_code" in str(err) else "cannot_connect"
-            except aiohttp.ClientError:
+                if "invalid_code" in str(err):
+                    errors["base"] = "invalid_auth"
+                elif "Connection error" in str(err):
+                    errors["base"] = "cannot_connect"
+                else:
+                    errors["base"] = "unknown"
+            except Exception:  # noqa: S110
                 errors["base"] = "cannot_connect"
             else:
                 customer = data["customer"]

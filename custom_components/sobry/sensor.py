@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import APP_URL, DOMAIN
+from .const import APP_URL, DOMAIN, KEY_COLOR, KEY_COLOR_LABEL, KEY_PRICE, KEY_TIME
 from .coordinator import SobryContractCoordinator
 
 
@@ -51,20 +51,6 @@ class _SobryBaseSensor(CoordinatorEntity[SobryContractCoordinator], SensorEntity
         day_start = int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
         return {ts: slot for ts, slot in cache.items() if day_start <= ts < day_start + 86400}
 
-    def _next_24h_slots(self) -> list[dict]:
-        """Return slots covering the next 24 hours, ordered chronologically."""
-        cache = self.coordinator.data
-        if not cache:
-            return []
-        now = dt_util.now()
-        current_ts = int(now.replace(minute=(now.minute // 15) * 15, second=0, microsecond=0).timestamp())
-        cutoff = current_ts + 86400
-        return [
-            {"timestamp": ts, "price": slot.get("price")}
-            for ts, slot in sorted(cache.items())
-            if current_ts <= ts < cutoff
-        ]
-
 
 class SobryCurrentPriceSensor(_SobryBaseSensor):
     """Current electricity price for a Sobry contract, updated every 15 min.
@@ -75,22 +61,21 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
       color_label  — human-readable tier label (e.g. "Off-peak", "Peak")
     """
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_native_unit_of_measurement = "EUR/kWh"
     _attr_suggested_display_precision = 4
     _attr_icon = "mdi:meter-electric"
+    _attr_translation_key = "current_price"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_current_price"
-        lang = coordinator.hass.config.language
-        self._attr_name = "Prix Actuel" if lang == "fr" else "Current Price"
 
     @property
     def native_value(self) -> float | None:
         slot = _current_slot(self._today_cache())
-        return slot.get("price") if slot else None
+        return slot.get(KEY_PRICE) if slot else None
 
     @property
     def extra_state_attributes(self) -> dict | None:
@@ -98,27 +83,25 @@ class SobryCurrentPriceSensor(_SobryBaseSensor):
         if slot is None:
             return None
         return {
-            "color": slot.get("color"),
-            "color_label": slot.get("colorLabel"),
-            "prices": self._next_24h_slots(),
+            KEY_COLOR: slot.get(KEY_COLOR),
+            KEY_COLOR_LABEL: slot.get(KEY_COLOR_LABEL),
         }
 
 
 class SobryMonthlyEnergySensor(_SobryBaseSensor):
     """Monthly energy consumption for a Sobry contract."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_native_unit_of_measurement = "kWh"
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_state_class = SensorStateClass.TOTAL
     _attr_icon = "mdi:lightning-bolt"
+    _attr_translation_key = "monthly_energy"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_monthly_energy"
-        lang = coordinator.hass.config.language
-        self._attr_name = "Consommation Mensuelle" if lang == "fr" else "Monthly Energy"
 
     @property
     def native_value(self) -> float | None:
@@ -128,18 +111,17 @@ class SobryMonthlyEnergySensor(_SobryBaseSensor):
 class SobryMonthlyPriceSensor(_SobryBaseSensor):
     """Monthly electricity cost for a Sobry contract."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_native_unit_of_measurement = "EUR"
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_suggested_display_precision = 2
     _attr_icon = "mdi:currency-eur"
+    _attr_translation_key = "monthly_price"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_monthly_price"
-        lang = coordinator.hass.config.language
-        self._attr_name = "Coût Mensuel" if lang == "fr" else "Monthly Cost"
 
     @property
     def native_value(self) -> float | None:
@@ -149,17 +131,16 @@ class SobryMonthlyPriceSensor(_SobryBaseSensor):
 class SobrySubscribedPowerSensor(_SobryBaseSensor):
     """Contracted maximum power for a Sobry contract (diagnostic)."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_native_unit_of_measurement = "kVA"
     _attr_icon = "mdi:lightning-bolt"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "subscribed_power"
 
     def __init__(self, coordinator: SobryContractCoordinator) -> None:
         super().__init__(coordinator)
         contract = coordinator.contract
         self._attr_unique_id = f"sobry_{contract['id']}_subscribed_power"
-        lang = coordinator.hass.config.language
-        self._attr_name = "Puissance Souscrite" if lang == "fr" else "Subscribed Power"
 
     @property
     def native_value(self) -> int | None:

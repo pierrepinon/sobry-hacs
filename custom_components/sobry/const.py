@@ -12,3 +12,18 @@ APP_URL = "https://app.sobry.co"
 CONF_TOKEN = "token"
 CONF_CUSTOMER_ID = "customer_id"
 CONF_EMAIL = "email"
+
+# API response keys
+KEY_COLOR = "color"
+KEY_COLOR_LABEL = "colorLabel"
+KEY_PRICE = "price"
+KEY_TIME = "time"
+KEY_SLOTS = "slots"
+
+# Default values
+DEFAULT_CURRENCY = "EUR"
+DEFAULT_ENERGY_UNIT = "kWh"
+DEFAULT_POWER_UNIT = "kVA"
+
+# Timeouts (seconds)
+API_TIMEOUT = 30

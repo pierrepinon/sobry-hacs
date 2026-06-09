@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import APP_URL, DOMAIN, KEY_COLOR, KEY_COLOR_LABEL, KEY_PRICE, KEY_TIME
+from .const import APP_URL, DOMAIN, KEY_COLOR, KEY_COLOR_LABEL, KEY_PRICE
 from .coordinator import SobryContractCoordinator
 
 
@@ -153,4 +153,3 @@ def _current_slot(cache: dict[int, dict]) -> dict | None:
     # Floor to the nearest 15-min boundary to match slot keys in the cache.
     ts = int(now.replace(minute=(now.minute // 15) * 15, second=0, microsecond=0).timestamp())
     return cache.get(ts)
-

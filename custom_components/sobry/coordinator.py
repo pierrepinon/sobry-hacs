@@ -22,7 +22,9 @@ _CACHE_MAX_DAYS = 2
 class SobryContractCoordinator(DataUpdateCoordinator[dict[int, dict]]):
     """Price data coordinator for a single Sobry electricity contract."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, client: SobryApiClient, token: str, contract: dict) -> None:
+    def __init__(
+        self, hass: HomeAssistant, entry: ConfigEntry, client: SobryApiClient, token: str, contract: dict
+    ) -> None:
         super().__init__(hass, _LOGGER, name=f"{DOMAIN}_{contract['id']}")
         self._entry = entry
         self._client = client

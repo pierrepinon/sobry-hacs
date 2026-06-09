@@ -1,0 +1,42 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Run linters
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_dev.txt
+
+      - name: Run flake8
+        run: |
+          flake8 custom_components/sobry/ --max-line-length=120 --extend-ignore=E203,W503 --count --statistics
+
+      - name: Run black (check)
+        run: |
+          black --check custom_components/sobry/ tests/
+
+      - name: Run isort (check)
+        run: |
+          isort --check-only custom_components/sobry/ tests/
+
+      - name: Run mypy
+        run: |
+          mypy custom_components/sobry/ --ignore-missing-imports --disallow-untyped-defs

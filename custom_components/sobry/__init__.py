@@ -10,6 +10,7 @@ from .coordinator import SobryContractCoordinator
 
 PLATFORMS = ["sensor"]
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Sobry from a config entry.
 

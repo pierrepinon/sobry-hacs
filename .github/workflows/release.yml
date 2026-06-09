@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Create release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_dev.txt
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v --tb=short
+
+      - name: Run linters
+        run: |
+          flake8 custom_components/sobry/ --max-line-length=120 --extend-ignore=E203,W503 --count --statistics
+          black --check custom_components/sobry/ tests/
+          isort --check-only custom_components/sobry/ tests/
+
+      - name: Get version from tag
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update manifest version
+        run: |
+          # Extract current version from manifest
+          CURRENT_VERSION=$(jq -r '.version' custom_components/sobry/manifest.json)
+          echo "Current version: $CURRENT_VERSION"
+          echo "New version: ${{ steps.version.outputs.VERSION }}"
+          
+          # Update manifest.json with new version
+          jq --arg ver "${{ steps.version.outputs.VERSION }}" '.version = $ver' custom_components/sobry/manifest.json > /tmp/manifest.json
+          mv /tmp/manifest.json custom_components/sobry/manifest.json
+          
+          # Show updated manifest
+          cat custom_components/sobry/manifest.json
+
+      - name: Commit version update
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add custom_components/sobry/manifest.json
+          git commit -m "chore: update version to ${{ steps.version.outputs.VERSION }} [skip ci]"
+          git push
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## What's Changed
+            
+            See [CHANGELOG.md](https://github.com/pierrepinon/sobry-hacs/blob/${{ github.ref }}/CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
